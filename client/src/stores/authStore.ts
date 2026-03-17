@@ -43,7 +43,24 @@ export const useAuthStore = create<AuthState>((set) => ({
       const data = await userApi.setNickname(nickname);
       set({ user: data.user });
     } catch (error: any) {
-      const message = error.response?.data?.error || '设置昵称失败';
+      // Extract error message properly
+      let message = '设置昵称失败';
+      
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      } else if (typeof error === 'string') {
+        message = error;
+      }
+      
+      // Ensure message is a string
+      if (typeof message !== 'string') {
+        message = '设置昵称失败';
+      }
+      
       set({ error: message });
       throw new Error(message);
     }

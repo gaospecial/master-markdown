@@ -152,22 +152,30 @@ md-master/
 
 ## 部署
 
-### 前端部署 (Vercel/Netlify)
+本项目支持前后端分离部署。详细的部署指南请查看 **[DEPLOY.md](./DEPLOY.md)**。
 
-1. 构建前端：`cd client && npm run build`
-2. 将 `dist` 目录部署到 Vercel 或 Netlify
-3. 配置环境变量 `VITE_API_URL` 指向后端服务
+### 快速部署方案
 
-### 后端部署 (Railway/Render)
+- **前端**：部署到 Vercel（免费）
+- **后端**：部署到 Render（免费）
 
-1. 设置环境变量:
-   - `DATABASE_URL`
-   - `SESSION_SECRET`
-   - `GITHUB_CLIENT_ID`
-   - `GITHUB_CLIENT_SECRET`
-   - `CLIENT_URL` (前端部署地址)
-2. 构建命令：`npm run build`
-3. 启动命令：`npm run start`
+### 关键配置
+
+#### Vercel 环境变量
+
+```
+VITE_API_URL=https://your-backend.onrender.com/api
+```
+
+#### Render 环境变量
+
+```
+NODE_ENV=production
+SESSION_SECRET=your-random-secret-key
+CLIENT_URL=https://your-app.vercel.app
+```
+
+完整的分步指南、常见问题和故障排除，请参考 [DEPLOY.md](./DEPLOY.md)。
 
 ## 贡献
 
