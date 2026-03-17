@@ -14,14 +14,14 @@ router.get('/', async (req, res) => {
     });
 
     const leaderboard = users
-      .map(user => ({
+      .map((user: any) => ({
         id: user.id,
         nickname: user.nickname,
-        totalScore: user.progress.reduce((sum, p) => sum + p.score, 0),
+        totalScore: user.progress.reduce((sum: number, p: any) => sum + p.score, 0),
         completedLevels: user.progress.length
       }))
-      .filter(u => u.totalScore > 0) // Only show users who have scored
-      .sort((a, b) => b.totalScore - a.totalScore)
+      .filter((u: any) => u.totalScore > 0) // Only show users who have scored
+      .sort((a: any, b: any) => b.totalScore - a.totalScore)
       .slice(0, 100); // Top 100
 
     res.json(leaderboard);
@@ -42,17 +42,17 @@ router.get('/rank/:userId', async (req, res) => {
     });
 
     const sortedUsers = users
-      .map(user => ({
+      .map((user: any) => ({
         id: user.id,
         nickname: user.nickname,
-        totalScore: user.progress.reduce((sum, p) => sum + p.score, 0),
+        totalScore: user.progress.reduce((sum: number, p: any) => sum + p.score, 0),
         completedLevels: user.progress.length
       }))
-      .filter(u => u.totalScore > 0)
-      .sort((a, b) => b.totalScore - a.totalScore);
+      .filter((u: any) => u.totalScore > 0)
+      .sort((a: any, b: any) => b.totalScore - a.totalScore);
 
-    const rank = sortedUsers.findIndex(u => u.id === userId) + 1;
-    const user = sortedUsers.find(u => u.id === userId);
+    const rank = sortedUsers.findIndex((u: any) => u.id === userId) + 1;
+    const user = sortedUsers.find((u: any) => u.id === userId);
 
     res.json({
       rank,

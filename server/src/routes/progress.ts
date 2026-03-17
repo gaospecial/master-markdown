@@ -143,7 +143,7 @@ router.get('/score', async (req: any, res) => {
       where: { userId }
     });
 
-    const totalScore = progress.reduce((sum, p) => sum + p.score, 0);
+    const totalScore = progress.reduce((sum: number, p: any) => sum + p.score, 0);
     const completedLevels = progress.length;
 
     res.json({
