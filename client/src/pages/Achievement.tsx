@@ -58,7 +58,7 @@ function fireGrandConfetti() {
 
 export default function Achievement() {
   const navigate = useNavigate();
-  const { levels, progress, totalScore, completedLevels, fetchLevels, fetchProgress, getStageStats, isAllComplete } = useGameStore();
+  const { levels, totalScore, completedLevels, fetchLevels, fetchProgress, getStageStats, isAllComplete } = useGameStore();
 
   useEffect(() => {
     fetchLevels();

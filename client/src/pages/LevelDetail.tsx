@@ -73,7 +73,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'error' | 's
 export default function LevelDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { levels, progress, fetchLevels, submitAnswer, getLevelStatus, isLastLevelInStage, isStageComplete, isAllComplete } = useGameStore();
+  const { levels, progress, fetchLevels, submitAnswer, getLevelStatus, isLastLevelInStage } = useGameStore();
 
   const [code, setCode] = useState('');
   const [result, setResult] = useState<{ correct: boolean; message?: string } | null>(null);
