@@ -1,241 +1,171 @@
-# 部署指南
+# Master Markdown 部署文档
 
-本项目采用前后端分离部署：
-- **前端**：部署到 Vercel（静态网站托管）
-- **后端**：部署到 Render（免费 Node.js 服务）
+## 架构概述
 
----
-
-## 一、后端部署到 Render
-
-### 1. 准备工作
-
-确保你的代码已经推送到 GitHub 仓库。
-
-### 2. 注册 Render 账号
-
-访问 https://render.com 并使用 GitHub 账号登录。
-
-### 3. 创建 Web Service
-
-1. 点击 **"New +"** → 选择 **"Web Service"**
-2. 连接你的 GitHub 仓库（授权 Render 访问）
-3. 选择 `master-markdown` 仓库
-
-### 4. 配置服务
-
-填写以下配置：
-
-| 配置项 | 值 |
-|--------|-----|
-| **Name** | `md-master-api`（或你喜欢的名字） |
-| **Region** | Singapore（新加坡，离中国最近） |
-| **Branch** | `main` 或 `master` |
-| **Root Directory** | `server` |
-| **Runtime** | `Node` |
-| **Build Command** | `npm install && npm run build && npx prisma generate && npx prisma migrate deploy && npm run db:seed` |
-| **Start Command** | `npm start` |
-| **Instance Type** | `Free` |
-
-### 5. 设置环境变量
-
-在 **Environment Variables** 部分添加：
+简化后的架构：
+- **前端**：React SPA → 部署到 Vercel（不变）
+- **后端**：极简 Express API（单文件）→ 部署到 bio-spring.top
+- **数据库**：PostgreSQL → bio-spring.top 服务器
+- **验证逻辑**：在前端完成，后端只记录成绩
 
 ```
-DATABASE_URL=file:./prisma/dev.db
-NODE_ENV=production
-SESSION_SECRET=your-random-secret-key-here-change-this
-CLIENT_URL=https://master-markdown.vercel.app
-PORT=3001
+┌────────────────┐     ┌──────────────────────────────┐
+│  Vercel (前端)  │────→│  bio-spring.top (后端 + DB)   │
+│  React SPA      │     │  Express API + PostgreSQL     │
+│  + 答案验证      │     │  只负责记录成绩 + 排行榜       │
+└────────────────┘     └──────────────────────────────┘
 ```
 
-**重要**：
-- `SESSION_SECRET`：请生成一个随机字符串（至少 32 位）
-- `CLIENT_URL`：先填写你的 Vercel 域名（下一步会获取）
+## 一、服务器配置（bio-spring.top）
 
-### 6. 部署
-
-点击 **"Create Web Service"**，Render 会自动开始构建和部署。
-
-首次部署大约需要 **5-10 分钟**。
-
-### 7. 获取后端 URL
-
-部署成功后，你会看到类似这样的 URL：
-```
-https://md-master-api.onrender.com
-```
-
-**记下这个 URL**，下一步需要用到。
-
----
-
-## 二、前端部署到 Vercel
-
-### 1. 前端已经部署
-
-如果你的前端已经在 Vercel 上，只需要添加环境变量。
-
-### 2. 配置环境变量
-
-在 Vercel 项目设置中：
-
-1. 进入 **Settings** → **Environment Variables**
-2. 添加新变量：
-
-```
-VITE_API_URL=https://master-markdown.onrender.com/api
-```
-
-**注意**：替换为你的 Render 后端 URL，并在末尾加上 `/api`
-
-### 3. 重新部署
-
-添加环境变量后，Vercel 会自动触发重新部署。
-
-或者手动触发：**Deployments** → 点击最新部署旁的 **"..."** → **"Redeploy"**
-
----
-
-## 三、更新后端环境变量
-
-现在你有了 Vercel 的前端 URL，回到 Render：
-
-1. 进入你的 Web Service
-2. 点击 **Environment** 标签
-3. 更新 `CLIENT_URL` 为你的 Vercel URL：
-   ```
-   CLIENT_URL=https://your-app.vercel.app
-   ```
-4. 点击 **"Save Changes"**
-
-Render 会自动重新部署。
-
----
-
-## 四、验证部署
-
-### 1. 测试后端
-
-访问：`https://your-render-url.onrender.com/api/levels`
-
-应该返回关卡数据的 JSON。
-
-### 2. 测试前端
-
-访问你的 Vercel URL，尝试：
-- 修改昵称
-- 完成一个关卡
-- 查看排行榜
-
-如果一切正常，部署成功！🎉
-
----
-
-## 五、常见问题
-
-### Q1: Render 服务休眠
-
-**问题**：免费版 Render 在 15 分钟无活动后会休眠，首次访问需要 30-60 秒唤醒。
-
-**解决方案**：
-- 接受这个限制（免费服务的代价）
-- 或者升级到付费版（$7/月）保持常驻
-
-### Q2: 前端显示"无法连接到服务器"
-
-**检查清单**：
-1. Render 后端是否部署成功？
-2. Vercel 环境变量 `VITE_API_URL` 是否正确？
-3. Render 的 `CLIENT_URL` 是否设置为 Vercel 域名？
-4. 浏览器控制台是否有 CORS 错误？
-
-### Q3: TypeScript 编译错误
-
-如果看到 `Could not find a declaration file for module 'express'` 等错误：
-
-**原因**：构建依赖（TypeScript、类型定义）必须在 `dependencies` 中，不能只在 `devDependencies`。
-
-**解决**：已在 `server/package.json` 中将构建相关依赖移到 `dependencies`。
-
-### Q4: 数据库迁移失败
-
-如果 Render 构建时提示 Prisma 错误：
-
-1. 检查 `server/prisma/schema.prisma` 文件是否正确
-2. 确保 Build Command 包含 `npx prisma generate`
-3. 查看 Render 的构建日志，找到具体错误
-
-### Q4: Session 不工作
-
-确保：
-1. `SESSION_SECRET` 已设置
-2. 前端 API 客户端使用了 `withCredentials: true`
-3. CORS 配置允许 credentials
-
----
-
-## 六、本地开发
-
-本地开发时不需要设置 `VITE_API_URL`，前端会自动使用相对路径 `/api`。
-
-启动开发服务器：
+### 1. 创建 PostgreSQL 数据库
 
 ```bash
-# 同时启动前后端
-npm run dev
+# 创建数据库
+sudo -u postgres createdb master_markdown
 
-# 或分别启动
-cd server && npm run dev  # 后端：http://localhost:3001
-cd client && npm run dev  # 前端：http://localhost:5173
+# 创建用户
+sudo -u postgres psql -c "CREATE USER md_app WITH PASSWORD 'YOUR_PASSWORD';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE master_markdown TO md_app;"
+
+# 授予 schema 权限
+sudo -u postgres psql -d master_markdown -c "GRANT ALL ON SCHEMA public TO md_app;"
+sudo -u postgres psql -d master_markdown -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO md_app;"
+sudo -u postgres psql -d master_markdown -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO md_app;"
+
+# 初始化表
+psql -U md_app -d master_markdown -f server-simple/init.sql
 ```
 
----
+### 2. 部署 API
 
-## 七、更新部署
+```bash
+# 在服务器上
+cd /var/www
+git clone git@github.com:gaospecial/master-markdown.git
+cd master-markdown/server-simple
 
-### 更新后端
+# 安装依赖
+npm install
 
-推送代码到 GitHub，Render 会自动检测并重新部署。
+# 创建 .env 文件
+cp .env.example .env
+# 编辑 .env，填入真实的数据库密码和 session secret
 
-### 更新前端
+# 使用 pm2 管理进程
+npm install -g pm2
+pm2 start api.js --name master-markdown-api
+pm2 save
+pm2 startup
+```
 
-推送代码到 GitHub，Vercel 会自动检测并重新部署。
+### 3. Nginx 反向代理
 
----
+```nginx
+# /etc/nginx/sites-available/api.bio-spring.top
+server {
+    listen 443 ssl;
+    server_name api.bio-spring.top;
 
-## 八、成本
+    ssl_certificate     /path/to/ssl/cert.pem;
+    ssl_certificate_key /path/to/ssl/key.pem;
 
-- **Vercel**：完全免费（个人项目）
-- **Render**：完全免费（有休眠限制）
+    location /master-markdown/ {
+        proxy_pass http://127.0.0.1:3100/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
 
-**总成本：$0/月** 🎉
+```bash
+sudo ln -s /etc/nginx/sites-available/api.bio-spring.top /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
----
+## 二、前端部署（Vercel）
 
-## 九、备选方案
+### 1. 环境变量
 
-如果 Render 不满意，可以考虑：
+在 Vercel 项目设置中添加：
 
-### Railway
-- 免费额度：$5/月（约 500 小时）
-- 需要信用卡验证（不扣费）
-- 部署：https://railway.app
+```
+VITE_API_URL=https://api.bio-spring.top/master-markdown
+```
 
-### Fly.io
-- 免费额度：3 个小型应用
-- 配置稍复杂
-- 部署：https://fly.io
+### 2. 构建命令
 
----
+```
+Build Command: cd client && npm run build
+Output Directory: client/dist
+```
 
-## 十、技术支持
+### 3. vercel.json
 
-如果遇到问题：
+已有的 `vercel.json` 配置 SPA 路由重写，无需修改。
 
-1. 查看 Render 构建日志
-2. 查看浏览器控制台错误
-3. 检查网络请求（F12 → Network）
-4. 参考本文档的"常见问题"部分
+## 三、本地开发
 
-祝部署顺利！🚀
+```bash
+# 1. 前端
+cd client
+npm install
+npm run dev  # http://localhost:5173
+
+# 2. 后端
+cd server-simple
+npm install
+cp .env.example .env
+# 编辑 .env: DATABASE_URL, CORS_ORIGIN=http://localhost:5173
+node api.js  # http://localhost:3100
+
+# 3. 前端 .env
+# client/.env.local
+VITE_API_URL=http://localhost:3100
+```
+
+## 四、API 端点
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/health` | 健康检查 |
+| GET | `/user/me` | 获取当前用户 |
+| POST | `/user/nickname` | 设置昵称 |
+| GET | `/progress` | 获取用户进度 |
+| GET | `/progress/score` | 获取总分 |
+| POST | `/progress/submit` | 提交成绩（levelId, score, code） |
+| GET | `/leaderboard` | 排行榜 |
+
+## 五、文件结构
+
+```
+server-simple/
+├── api.js          # 主服务文件（唯一的 JS 文件）
+├── init.sql        # 数据库初始化脚本
+├── package.json    # 依赖声明
+├── .env.example    # 环境变量示例
+└── .env            # 实际环境变量（不提交到 git）
+
+client/src/
+├── data/levels.ts       # 静态关卡数据（前端）
+├── utils/validators.ts  # 答案验证器（前端）
+├── api/client.ts        # API 客户端
+├── stores/gameStore.ts  # 游戏状态管理
+└── ...                  # 其他前端文件
+```
+
+## 六、与旧架构的区别
+
+| 项目 | 旧架构 | 新架构 |
+|------|--------|--------|
+| 后端 | TypeScript + Prisma + Render | 单文件 JS + pg + bio-spring.top |
+| 关卡数据 | 后端数据库 seed | 前端静态数据 |
+| 答案验证 | 后端验证 | 前端验证 |
+| 后端职责 | 关卡 + 验证 + 成绩 + 排行榜 | 仅成绩 + 排行榜 |
+| 依赖 | Prisma ORM | 直接 pg 驱动 |
+| 文件数 | ~15 个后端文件 | 1 个 api.js + 1 个 init.sql |
+
+> **注意**: 旧的 `server/` 目录和 Render 部署可以在新架构验证通过后删除。

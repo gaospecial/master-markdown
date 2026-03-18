@@ -14,6 +14,7 @@ export interface Level {
   stageName: string;
   order: number;
   content: string;
+  expectedAnswer: string;
   hints: string;
   maxScore: number;
   taskType: string;

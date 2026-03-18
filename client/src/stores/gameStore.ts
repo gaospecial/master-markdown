@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { Level, Progress } from '../types';
-import { levelsApi, progressApi } from '../api/client';
+import { progressApi } from '../api/client';
+import { validateAnswer } from '../utils/validators';
+import { levels as staticLevels } from '../data/levels';
 
 interface GameState {
   levels: Level[];
@@ -9,7 +11,7 @@ interface GameState {
   completedLevels: number;
   isLoading: boolean;
   error: string | null;
-  fetchLevels: () => Promise<void>;
+  fetchLevels: () => void;
   fetchProgress: () => Promise<void>;
   submitAnswer: (levelId: number, code: string) => Promise<{ correct: boolean; score?: number; message?: string }>;
   getLevelStatus: (levelId: number) => { completed: boolean; score: number; attempts: number };
@@ -29,14 +31,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchLevels: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      const levels = await levelsApi.getAll();
-      set({ levels, isLoading: false });
-    } catch (error) {
-      set({ error: 'Failed to load levels', isLoading: false });
-    }
+  // 关卡数据现在是静态的，不需要从后端获取
+  fetchLevels: () => {
+    set({ levels: staticLevels, isLoading: false });
   },
 
   fetchProgress: async () => {
@@ -56,25 +53,45 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   submitAnswer: async (levelId: number, code: string) => {
-    try {
-      const result = await progressApi.submit(levelId, code);
-      if (result.correct && result.progress) {
+    const level = get().levels.find(l => l.id === levelId);
+    if (!level) return { correct: false, message: '关卡不存在' };
+
+    // 前端验证答案
+    const result = validateAnswer(levelId, code, level);
+
+    if (result.correct) {
+      // 计算分数
+      const status = get().getLevelStatus(levelId);
+      const attempts = status.attempts + 1;
+      let score = level.maxScore;
+      if (attempts > 3) score = Math.floor(score * 0.9);
+
+      // 提交分数到后端记录
+      try {
+        await progressApi.submitScore(levelId, score, code);
         await get().fetchProgress();
+      } catch (error) {
+        // 即使后端提交失败，前端验证结果仍然有效
+        console.error('Failed to submit score to server:', error);
       }
+
       return {
-        correct: result.correct,
-        score: result.score,
+        correct: true,
+        score,
         message: result.message
       };
-    } catch (error) {
-      return { correct: false, message: '提交失败，请重试' };
     }
+
+    return {
+      correct: false,
+      message: result.message
+    };
   },
 
   getLevelStatus: (levelId: number) => {
     const progress = get().progress.find(p => p.levelId === levelId);
     return {
-      completed: !!progress,
+      completed: !!progress && progress.score > 0,
       score: progress?.score || 0,
       attempts: progress?.attempts || 0
     };
@@ -84,7 +101,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { progress, levels } = get();
     if (progress.length === 0) return 1;
 
-    const completedLevelIds = new Set(progress.map(p => p.levelId));
+    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.levelId));
     const stages = [...new Set(levels.map(l => l.stage))].sort((a, b) => a - b);
 
     for (const stage of stages) {
@@ -100,7 +117,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   isStageComplete: (stageId: number) => {
     const { levels, progress } = get();
-    const completedLevelIds = new Set(progress.map(p => p.levelId));
+    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.levelId));
     const stageLevels = levels.filter(l => l.stage === stageId);
     if (stageLevels.length === 0) return false;
     return stageLevels.every(l => completedLevelIds.has(l.id));
@@ -109,14 +126,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   isAllComplete: () => {
     const { levels, progress } = get();
     if (levels.length === 0) return false;
-    const completedLevelIds = new Set(progress.map(p => p.levelId));
+    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.levelId));
     return levels.every(l => completedLevelIds.has(l.id));
   },
 
   getStageStats: (stageId: number) => {
     const { levels, progress } = get();
     const stageLevels = levels.filter(l => l.stage === stageId);
-    const completedLevelIds = new Set(progress.map(p => p.levelId));
+    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.levelId));
     const completedInStage = stageLevels.filter(l => completedLevelIds.has(l.id));
     const totalScore = completedInStage.reduce((sum, l) => {
       const p = progress.find(p => p.levelId === l.id);
