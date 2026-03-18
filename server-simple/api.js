@@ -9,7 +9,12 @@ const express = require('express');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const cors = require('cors');
+const crypto = require('crypto');
 const { Pool } = require('pg');
+
+// ===== 提交签名密钥 =====
+const SUBMIT_SECRET = process.env.SUBMIT_SECRET || 'md-master-default-secret';
+const SUBMIT_TIMESTAMP_TOLERANCE = 5 * 60 * 1000; // 5 分钟有效期
 
 // ===== 数据库连接 =====
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -108,14 +113,32 @@ app.get('/progress/score', async (req, res) => {
   }
 });
 
-// 提交成绩 — 前端已验证答案，后端直接记录分数
+// 提交成绩 — 前端已验证答案，后端验证签名后记录分数
 app.post('/progress/submit', async (req, res) => {
   try {
-    const { levelId, score, code } = req.body;
+    const { levelId, score, code, timestamp, signature } = req.body;
     const userId = await ensureUser(req);
 
     if (!levelId || score === undefined) {
       return res.status(400).json({ error: 'Missing levelId or score' });
+    }
+
+    // ===== HMAC 签名验证 =====
+    if (!timestamp || !signature) {
+      return res.status(403).json({ error: 'Missing signature' });
+    }
+    // 检查时间戳是否在有效期内（防重放攻击）
+    if (Math.abs(Date.now() - timestamp) > SUBMIT_TIMESTAMP_TOLERANCE) {
+      return res.status(403).json({ error: 'Request expired' });
+    }
+    // 验证签名
+    const payload = `${levelId}:${score}:${timestamp}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', SUBMIT_SECRET)
+      .update(payload)
+      .digest('hex');
+    if (signature !== expectedSignature) {
+      return res.status(403).json({ error: 'Invalid signature' });
     }
 
     // 获取已有进度

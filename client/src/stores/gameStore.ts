@@ -38,12 +38,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   fetchProgress: async () => {
     try {
-      const [progressData, scoreData] = await Promise.all([
-        progressApi.getAll(),
-        progressApi.getScore()
-      ]);
+      // 单次请求获取全部进度数据（/progress/score 已包含 progress 数组）
+      const scoreData = await progressApi.getScore();
       set({
-        progress: progressData,
+        progress: scoreData.progress,
         totalScore: scoreData.totalScore,
         completedLevels: scoreData.completedLevels
       });

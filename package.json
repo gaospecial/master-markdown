@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Markdown 闯关小游戏 - 学习 Markdown 和 Quarto Markdown 的趣味平台",
   "scripts": {
-    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "dev": "cd client && npm run dev",
+    "dev:full": "concurrently \"cd server-simple && npm start\" \"cd client && npm run dev\"",
     "build": "cd client && npm install && npm run build",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
     "db:setup": "cd server && npx prisma generate && npx prisma migrate dev --name init && npm run db:seed",

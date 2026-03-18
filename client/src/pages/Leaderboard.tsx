@@ -16,9 +16,12 @@ export default function Leaderboard() {
         const data = await leaderboardApi.getAll();
         setLeaderboard(data);
 
+        // 从排行榜数据中查找当前用户排名（无需额外 API 调用）
         if (user) {
-          const rank = await leaderboardApi.getRank(user.id);
-          setUserRank(rank);
+          const index = data.findIndex((entry: LeaderboardEntry) => entry.id === user.id);
+          if (index !== -1) {
+            setUserRank({ rank: index + 1, totalScore: data[index].totalScore });
+          }
         }
       } catch (error) {
         console.error('Failed to fetch leaderboard:', error);
