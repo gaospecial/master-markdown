@@ -1,6 +1,20 @@
 # MD Master - Markdown 闯关小游戏
 
-一个帮助用户学习 Markdown 和 Quarto Markdown (QMD) 语法的网页闯关小游戏，采用渐进式难度设计，支持 GitHub 账号登录和积分排行榜。
+一个帮助用户学习 Markdown 和 Quarto Markdown (QMD) 语法的网页闯关小游戏，采用渐进式难度设计，支持积分排行榜。
+
+## 架构概述
+
+```
+┌────────────────────┐      ┌──────────────────────────────┐
+│  Vercel (前端)      │─────→│  bio-spring.top (后端 + DB)   │
+│  React SPA          │      │  Express API + PostgreSQL     │
+│  关卡数据 + 答案验证  │      │  仅负责记录成绩 + 排行榜       │
+└────────────────────┘      └──────────────────────────────┘
+```
+
+- **前端**：React SPA 部署到 Vercel，包含关卡数据和答案验证逻辑
+- **后端**：极简 Express API（单文件 `api.js`）部署到 bio-spring.top
+- **数据库**：PostgreSQL，仅存储用户和成绩数据
 
 ## 技术栈
 
@@ -10,23 +24,22 @@
 - Vite (构建工具)
 - React Router v6 (路由)
 - Zustand (状态管理)
-- Tailwind CSS + Headless UI (UI组件)
+- Tailwind CSS + Headless UI (UI 组件)
 - Monaco Editor (代码编辑)
-- react-markdown + remark-gfm (Markdown渲染)
+- react-markdown + remark-gfm (Markdown 渲染)
 
 ### 后端
 
-- Node.js + Express.js
-- SQLite (数据库)
-- Prisma (ORM)
-- Passport.js (GitHub OAuth认证)
-- express-session + connect-sqlite3 (Session管理)
+- Node.js + Express.js（单文件 `api.js`）
+- PostgreSQL（数据库）
+- pg（数据库驱动，无 ORM）
+- express-session（Session 管理）
 
 ## 功能特性
 
 - 20 个精心设计的关卡，涵盖 Markdown 基础和 Quarto Markdown 进阶
 - 实时代码编辑与 Markdown 预览
-- GitHub OAuth 登录
+- 前端答案验证，即时反馈
 - 积分排行榜系统
 - 个人进度追踪
 - 响应式设计
@@ -37,149 +50,104 @@
 |------|------|----------|------|
 | 1 | Markdown 基础 | 1-8 | 标题、段落、粗体斜体、列表、链接、图片、引用、代码块 |
 | 2 | Markdown 进阶 | 9-12 | 分隔线、表格、任务列表、脚注 |
-| 3 | QMD 入门 | 13-16 | YAML元数据、代码单元格、单元格选项、图表输出 |
+| 3 | QMD 入门 | 13-16 | YAML 元数据、代码单元格、单元格选项、图表输出 |
 | 4 | QMD 进阶 | 17-20 | 交叉引用、参考文献、标注框、综合挑战 |
 
 ## 快速开始
 
-### 1. 安装依赖
+### 本地开发
+
+#### 1. 启动后端
 
 ```bash
-npm run install:all
-```
-
-### 2. 配置环境变量
-
-#### 后端配置
-
-复制 `server/.env.example` 到 `server/.env` 并配置：
-
-```bash
-cd server
+cd server-simple
+npm install
 cp .env.example .env
+# 编辑 .env，配置 DATABASE_URL 和 CORS_ORIGIN
+node api.js
 ```
 
-编辑 `.env` 文件：
+后端运行在 http://localhost:3100
 
-- `GITHUB_CLIENT_ID` 和 `GITHUB_CLIENT_SECRET`: 从 GitHub OAuth App 获取
-- `SESSION_SECRET`: 设置一个随机字符串作为 session 密钥
-
-创建 GitHub OAuth App:
-
-1. 访问 GitHub Settings → Developer settings → OAuth Apps
-2. 点击 "New OAuth App"
-3. 填写应用信息:
-   - Application name: MD Master
-   - Homepage URL: http://localhost:3000
-   - Authorization callback URL: http://localhost:3001/auth/github/callback
-4. 创建后获取 Client ID 和 Client Secret
-
-### 3. 初始化数据库
+#### 2. 启动前端
 
 ```bash
-npm run db:setup
-```
-
-这会：
-
-- 生成 Prisma 客户端
-- 运行数据库迁移
-- 导入 20 个关卡数据
-
-### 4. 启动开发服务器
-
-```bash
+cd client
+npm install
+# 创建 .env.local
+echo "VITE_API_URL=http://localhost:3100" > .env.local
 npm run dev
 ```
 
-这将同时启动：
+前端运行在 http://localhost:5173
 
-- 前端开发服务器 (http://localhost:3000)
-- 后端 API 服务器 (http://localhost:3001)
+### 数据库初始化
 
-### 5. 访问应用
-
-打开浏览器访问 http://localhost:3000
+```bash
+# 在 PostgreSQL 中创建数据库后，运行初始化脚本
+psql -U your_user -d master_markdown -f server-simple/init.sql
+```
 
 ## 项目结构
 
 ```
-md-master/
-├── client/                    # 前端项目
+master-markdown/
+├── client/                      # 前端项目（Vercel 部署）
 │   ├── src/
-│   │   ├── components/        # React 组件
-│   │   ├── pages/             # 页面组件
-│   │   ├── stores/            # Zustand 状态管理
-│   │   ├── api/               # API 客户端
-│   │   ├── types/             # TypeScript 类型定义
-│   │   └── App.tsx            # 应用入口
+│   │   ├── components/          # React 组件
+│   │   ├── pages/               # 页面组件
+│   │   ├── stores/              # Zustand 状态管理
+│   │   ├── api/                 # API 客户端
+│   │   ├── data/                # 静态关卡数据
+│   │   ├── utils/               # 答案验证器
+│   │   ├── types/               # TypeScript 类型定义
+│   │   └── App.tsx              # 应用入口
 │   └── package.json
-├── server/                    # 后端项目
-│   ├── src/
-│   │   ├── routes/            # API 路由
-│   │   ├── prisma/            # Prisma 配置和种子数据
-│   │   └── index.ts           # 服务器入口
-│   ├── prisma/
-│   │   └── schema.prisma      # 数据库模型
-│   └── package.json
+├── server-simple/               # 极简后端（bio-spring.top 部署）
+│   ├── api.js                   # 唯一的服务文件
+│   ├── init.sql                 # 数据库初始化脚本
+│   ├── package.json             # 依赖声明
+│   └── .env.example             # 环境变量示例
+├── vercel.json                  # Vercel 部署配置
+├── test-api.sh                  # API 测试脚本
+├── DEPLOY.md                    # 详细部署文档
 └── README.md
 ```
 
-## 可用脚本
+## API 端点
 
-### 根目录
-
-- `npm run dev` - 同时启动前后端开发服务器
-- `npm run build` - 构建前端生产版本
-- `npm run install:all` - 安装所有依赖
-- `npm run db:setup` - 初始化数据库并导入数据
-- `npm run db:reset` - 重置数据库
-
-### 服务端 (server/)
-
-- `npm run dev` - 启动开发服务器 (带热重载)
-- `npm run build` - 编译 TypeScript
-- `npm run start` - 启动生产服务器
-- `npm run db:migrate` - 运行数据库迁移
-- `npm run db:seed` - 导入关卡数据
-- `npm run db:studio` - 打开 Prisma Studio
-
-### 客户端 (client/)
-
-- `npm run dev` - 启动开发服务器
-- `npm run build` - 构建生产版本
-- `npm run preview` - 预览生产构建
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/health` | 健康检查 |
+| GET | `/user/me` | 获取当前用户（自动创建） |
+| POST | `/user/nickname` | 设置昵称 |
+| GET | `/progress` | 获取用户进度 |
+| GET | `/progress/score` | 获取总分 |
+| POST | `/progress/submit` | 提交成绩 |
+| GET | `/leaderboard` | 排行榜 |
 
 ## 部署
 
-本项目支持前后端分离部署。详细的部署指南请查看 **[DEPLOY.md](./DEPLOY.md)**。
+详细的部署指南请查看 **[DEPLOY.md](./DEPLOY.md)**。
 
-### 快速部署方案
+### 部署方案
 
-- **前端**：部署到 Vercel（免费）
-- **后端**：部署到 Render（免费）
+- **前端**：Vercel（自动从 GitHub 部署）
+- **后端**：bio-spring.top 服务器（pm2 + Nginx 反向代理）
+- **数据库**：bio-spring.top 上的 PostgreSQL
 
-### 关键配置
-
-#### Vercel 环境变量
-
-```
-VITE_API_URL=https://your-backend.onrender.com/api
-```
-
-#### Render 环境变量
+### Vercel 环境变量
 
 ```
-NODE_ENV=production
-SESSION_SECRET=your-random-secret-key
-CLIENT_URL=https://your-app.vercel.app
+VITE_API_URL=https://api.bio-spring.top/master-markdown
 ```
 
-完整的分步指南、常见问题和故障排除，请参考 [DEPLOY.md](./DEPLOY.md)。
+### 测试
 
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
+```bash
+# 运行 API 测试脚本
+bash test-api.sh
+```
 
 ## 许可证
 
