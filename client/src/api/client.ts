@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { User, Progress, LeaderboardEntry } from '../types';
 
-// Use environment variable for API URL, fallback to relative path for local dev
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.bio-spring.top/master-markdown';
+// Use environment variable for API URL, fallback to relative path for same-domain deployment
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 const SUBMIT_SECRET = import.meta.env.VITE_SUBMIT_SECRET || 'md-master-default-secret';
 
 const api = axios.create({
