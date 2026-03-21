@@ -58,7 +58,7 @@ export async function ensureUser(req: NextApiRequest, res: NextApiResponse): Pro
     const newToken = generateToken(userId);
     res.setHeader(
       'Set-Cookie',
-      `session-token=${newToken}; Path=/; Max-Age=${SESSION_MAX_AGE / 1000}; HttpOnly; Secure; SameSite=None`
+      `session-token=${newToken}; Path=/; Max-Age=${SESSION_MAX_AGE / 1000}; HttpOnly; Secure; SameSite=Lax`
     );
   } else {
     // 确保用户存在于数据库
