@@ -76,20 +76,12 @@ export async function ensureUser(req: NextApiRequest, res: NextApiResponse): Pro
 
 // 处理OPTIONS请求的CORS
 export function handleCors(req: NextApiRequest, res: NextApiResponse): boolean {
-  const origin = req.headers.origin || '';
-  const allowedOrigins = [
-    process.env.CORS_ORIGIN || 'https://master-markdown.vercel.app',
-    'http://localhost:5173', // 本地开发
-    'http://localhost:3000'  // Vercel本地开发
-  ];
-
-  // 设置CORS头
-  if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
-  }
+  // 同域名部署，直接返回允许所有CORS请求
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
