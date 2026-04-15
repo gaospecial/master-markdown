@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { User } from '../lib/types';
-import { userApi } from '../lib/api';
+import { userApi, authApi, tokenManager } from '../lib/api';
 
 interface AuthState {
   user: User | null;
@@ -8,6 +8,8 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   fetchUser: () => Promise<void>;
+  loginWithGitHub: () => Promise<void>;
+  logout: () => void;
   setNickname: (nickname: string) => Promise<void>;
 }
 
@@ -18,51 +20,50 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
 
   fetchUser: async () => {
+    const token = tokenManager.get();
+    if (!token) {
+      set({ user: null, isAuthenticated: false, isLoading: false });
+      return;
+    }
     try {
       set({ isLoading: true, error: null });
-      const data = await userApi.getMe();
+      const response = await userApi.getMe();
       set({
-        user: data.user,
+        user: response.data,
         isAuthenticated: true,
         isLoading: false,
       });
     } catch (error) {
       console.error('Failed to fetch user:', error);
+      tokenManager.remove();
       set({
         user: null,
         isAuthenticated: false,
         isLoading: false,
-        error: '无法连接到服务器',
+        error: null,
       });
     }
   },
 
-  setNickname: async (nickname: string) => {
+  loginWithGitHub: async () => {
+    const redirectUri = `${window.location.origin}/auth/callback`;
     try {
-      set({ error: null });
-      const data = await userApi.setNickname(nickname);
-      set({ user: data.user });
-    } catch (error: any) {
-      // Extract error message properly
-      let message = '设置昵称失败';
-      
-      if (error.response?.data?.error) {
-        message = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        message = error.response.data.message;
-      } else if (error.message) {
-        message = error.message;
-      } else if (typeof error === 'string') {
-        message = error;
-      }
-      
-      // Ensure message is a string
-      if (typeof message !== 'string') {
-        message = '设置昵称失败';
-      }
-      
-      set({ error: message });
-      throw new Error(message);
+      const response = await authApi.getAuthorizeUrl(redirectUri);
+      window.location.href = response.data.url;
+    } catch (error) {
+      console.error('Failed to get GitHub authorize URL:', error);
+      set({ error: '无法发起 GitHub 登录' });
     }
+  },
+
+  logout: () => {
+    tokenManager.remove();
+    set({ user: null, isAuthenticated: false, error: null });
+    window.location.href = '/';
+  },
+
+  setNickname: async (nickname: string) => {
+    set({ error: '昵称修改功能待开发' });
+    throw new Error('昵称修改功能待开发');
   },
 }));
