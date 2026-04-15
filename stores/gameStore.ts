@@ -38,15 +38,16 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   fetchProgress: async () => {
     try {
-      // 单次请求获取全部进度数据（/progress/score 已包含 progress 数组）
-      const scoreData = await progressApi.getScore();
+      const response = await progressApi.getScore();
+      const data = response.data;
       set({
-        progress: scoreData.progress,
-        totalScore: scoreData.totalScore,
-        completedLevels: scoreData.completedLevels
+        progress: data.progress,
+        totalScore: data.total_score,
+        completedLevels: data.completed_levels,
       });
     } catch (error) {
-      set({ error: 'Failed to load progress' });
+      // 未登录时不报错，只清空进度
+      set({ progress: [], totalScore: 0, completedLevels: 0 });
     }
   },
 
@@ -87,11 +88,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   getLevelStatus: (levelId: number) => {
-    const progress = get().progress.find(p => p.levelId === levelId);
+    const progress = get().progress.find(p => p.level_id === levelId);
     return {
       completed: !!progress && progress.score > 0,
       score: progress?.score || 0,
-      attempts: progress?.attempts || 0
+      attempts: progress?.attempts || 0,
     };
   },
 
@@ -99,7 +100,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { progress, levels } = get();
     if (progress.length === 0) return 1;
 
-    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.levelId));
+    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.level_id));
     const stages = [...new Set(levels.map(l => l.stage))].sort((a, b) => a - b);
 
     for (const stage of stages) {
@@ -115,7 +116,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   isStageComplete: (stageId: number) => {
     const { levels, progress } = get();
-    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.levelId));
+    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.level_id));
     const stageLevels = levels.filter(l => l.stage === stageId);
     if (stageLevels.length === 0) return false;
     return stageLevels.every(l => completedLevelIds.has(l.id));
@@ -124,17 +125,17 @@ export const useGameStore = create<GameState>((set, get) => ({
   isAllComplete: () => {
     const { levels, progress } = get();
     if (levels.length === 0) return false;
-    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.levelId));
+    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.level_id));
     return levels.every(l => completedLevelIds.has(l.id));
   },
 
   getStageStats: (stageId: number) => {
     const { levels, progress } = get();
     const stageLevels = levels.filter(l => l.stage === stageId);
-    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.levelId));
+    const completedLevelIds = new Set(progress.filter(p => p.score > 0).map(p => p.level_id));
     const completedInStage = stageLevels.filter(l => completedLevelIds.has(l.id));
     const totalScore = completedInStage.reduce((sum, l) => {
-      const p = progress.find(p => p.levelId === l.id);
+      const p = progress.find(p => p.level_id === l.id);
       return sum + (p?.score || 0);
     }, 0);
     const maxScore = stageLevels.reduce((sum, l) => sum + l.maxScore, 0);

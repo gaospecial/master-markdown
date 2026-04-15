@@ -1,4 +1,4 @@
-import type { Level } from '../types';
+import type { Level } from '../lib/types';
 
 export const levels: Level[] = [
   // Stage 1: Markdown 基础 (1-8)

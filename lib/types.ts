@@ -34,3 +34,19 @@ export interface LevelContent {
   options?: string[];
   correctAnswer?: string;
 }
+
+export interface Level {
+  id: number;
+  title: string;
+  description: string;
+  type: string;
+  difficulty: number;
+  stage: number;
+  stageName: string;
+  order: number;
+  content: string;
+  expectedAnswer: string;
+  hints: string;
+  maxScore: number;
+  taskType: string;
+}
