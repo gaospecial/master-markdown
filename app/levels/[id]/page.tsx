@@ -76,7 +76,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'error' | 's
 export default function LevelDetail() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id;
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { levels, progress, fetchLevels, submitAnswer, getLevelStatus, isLastLevelInStage } = useGameStore();
   const { isAuthenticated, isLoading: authLoading, loginWithGitHub } = useAuthStore();
 

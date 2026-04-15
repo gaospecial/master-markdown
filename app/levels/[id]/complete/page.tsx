@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useGameStore } from '../../../stores/gameStore';
+import { useGameStore } from '../../../../stores/gameStore';
 import confetti from 'canvas-confetti';
 import {
   CheckCircleIcon,
@@ -94,7 +94,7 @@ export default function StageComplete() {
   const params = useParams();
   const router = useRouter();
   const stageId = params.stageId;
-  const stage = parseInt(stageId || '1');
+  const stage = parseInt(Array.isArray(stageId) ? stageId[0] : stageId || '1');
   const { levels, progress, fetchLevels, fetchProgress, getStageStats, isStageComplete, isAllComplete } = useGameStore();
 
   const info = stageInfo[stage];
