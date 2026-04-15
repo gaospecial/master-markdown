@@ -1,22 +1,36 @@
 export interface User {
-  id: string;
-  nickname: string;
-  createdAt: string;
+  id: number;
+  username: string;
+  display_name: string | null;
+  nickname: string | null;
+  avatar_url: string | null;
+  modules: string[];
+  created_at: string;
 }
 
 export interface Progress {
   id: number;
-  userId: string;
-  levelId: number;
+  user_id: number;
+  level_id: number;
   score: number;
   attempts: number;
   code?: string;
-  completedAt?: string;
+  completed_at?: string;
 }
 
 export interface LeaderboardEntry {
-  id: string;
+  id: number;
   nickname: string;
-  totalScore: number;
-  completedLevels: number;
+  avatar_url: string | null;
+  total_score: number;
+  completed_levels: number;
+}
+
+export interface LevelContent {
+  task?: string;
+  question?: string;
+  instruction?: string;
+  template?: string;
+  options?: string[];
+  correctAnswer?: string;
 }
