@@ -15,14 +15,15 @@ export default function Leaderboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await leaderboardApi.getAll();
+        const response = await leaderboardApi.getAll();
+        const data = response.data;
         setLeaderboard(data);
 
         // 从排行榜数据中查找当前用户排名（无需额外 API 调用）
         if (user) {
           const index = data.findIndex((entry: LeaderboardEntry) => entry.id === user.id);
           if (index !== -1) {
-            setUserRank({ rank: index + 1, totalScore: data[index].totalScore });
+            setUserRank({ rank: index + 1, totalScore: data[index].total_score });
           }
         }
       } catch (error) {
@@ -117,10 +118,10 @@ export default function Leaderboard() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right text-gray-600">
-                    {entry.completedLevels}
+                    {entry.completed_levels}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <span className="font-bold text-yellow-600">{entry.totalScore}</span>
+                    <span className="font-bold text-yellow-600">{entry.total_score}</span>
                   </td>
                 </tr>
               ))}

@@ -23,7 +23,7 @@ export default function Levels() {
     { id: 4, name: 'Quarto Markdown 进阶', description: '精通 Quarto 文档' }
   ];
 
-  const completedLevelIds = new Set(progress.map(p => p.levelId));
+  const completedLevelIds = new Set(progress.map(p => p.level_id));
   const currentStage = getCurrentStage();
 
   return (

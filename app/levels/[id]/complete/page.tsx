@@ -184,7 +184,7 @@ export default function StageComplete() {
           </h3>
           <div className="space-y-3">
             {stats.levels.map((level) => {
-              const p = progress.find(pr => pr.levelId === level.id);
+              const p = progress.find(pr => pr.level_id === level.id);
               const completed = !!p;
               return (
                 <div key={level.id} className={`flex items-center justify-between p-3 rounded-lg ${completed ? 'bg-green-50' : 'bg-gray-50'}`}>

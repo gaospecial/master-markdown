@@ -23,7 +23,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (user) {
-      setNicknameInput(user.nickname);
+      setNicknameInput(user.nickname || user.display_name || user.username || '');
     }
   }, [user]);
 
@@ -51,7 +51,7 @@ export default function Profile() {
     }
   };
 
-  const completedLevelIds = new Set(progress.map(p => p.levelId));
+  const completedLevelIds = new Set(progress.map(p => p.level_id));
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -138,7 +138,7 @@ export default function Profile() {
       <div className="space-y-3">
         {levels.map((level) => {
           const isCompleted = completedLevelIds.has(level.id);
-          const progressData = progress.find(p => p.levelId === level.id);
+          const progressData = progress.find(p => p.level_id === level.id);
 
           return (
             <Link
